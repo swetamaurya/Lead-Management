@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema(
     password: { type: String },
     mobile: { type: String },
     roles: { type: String },
+    assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
     assigned: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Lead' }],
     image: { type: String },

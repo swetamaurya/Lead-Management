@@ -221,34 +221,42 @@ exports.updateCallDeatils = async (req, res) => {
   }      
 
 
-// multiple assinged
 exports.assingedLead = async (req, res) => {
-  try {
-      const { leadIds, userId } = req.body;
-
-      // Update each lead with the assigned userId
-      for (let data of leadIds) {
-          await Lead.findOneAndUpdate(
-              { _id: data },
-              { $set: { assignedTo: userId } },
-              { new: true }
-          );
-      }
-
-      // **Update the User model to store assigned leads**
-      await User.findOneAndUpdate(
-          { _id: userId },
-          { $addToSet: { assigned: { $each: leadIds } } }, // Add leads without duplicates
-          { new: true }
-      );
-
-      return res.status(200).json({ message: "Leads assigned successfully." });
-
-  } catch (error) {
-      console.error("Error assigning leads:", error);
-      return res.status(500).json(`Internal server error: ${error.message}`);
-  }
-};
+    try {
+        const { leadIds, userId, assignedBy } = req.body; // Get assignedBy from request
+  
+        // Validate input
+        if (!leadIds || !userId || !assignedBy) {
+            return res.status(400).json({ message: "Missing required fields: leadIds, userId, assignedBy" });
+        }
+  
+        // Update each lead with the assigned userId and assignedBy
+        for (let leadId of leadIds) {
+            await Lead.findOneAndUpdate(
+                { _id: leadId },
+                { $set: { assignedTo: userId, assignedBy: assignedBy } }, // Assign lead and store who assigned it
+                { new: true }
+            );
+        }
+  
+        // **Update the User model to store assigned leads and assignedBy**
+        await User.findOneAndUpdate(
+            { _id: userId },
+            { 
+                $addToSet: { assigned: { $each: leadIds } }, // Add leads without duplicates
+                $set: { assignedBy: assignedBy } // Save the ID of the person who assigned the leads
+            },
+            { new: true }
+        );
+  
+        return res.status(200).json({ message: "Leads assigned successfully." });
+  
+    } catch (error) {
+        console.error("Error assigning leads:", error);
+        return res.status(500).json({ message: `Internal server error: ${error.message}` });
+    }
+  };
+  
 
 
 

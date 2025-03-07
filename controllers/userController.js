@@ -259,7 +259,10 @@ const getAllUser = async (req, res) => {
     const users = await User.find(query) 
     .populate({
       path: "assigned"
-  })
+  }).populate({
+    path: "assignedBy"
+})
+  
       .sort({ _id: -1 })
       .skip(skip)
       .limit(perPage)
@@ -294,7 +297,9 @@ const getUser = async (req, res) => {
       const user = await User.findOne({ _id })
           .populate({
               path: "assigned"
-          })
+          }).populate({
+            path: "assignedBy"
+        })
           .lean();
 
       if (!user) {
