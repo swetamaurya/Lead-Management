@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {Lead ,Sequence} = require('../model/leadModel');
 const {auth} = require('../middleware/authorization');
-const { createLead ,getAllLeads ,getSingleLead,updateLead ,assingedLead, followUpCreate,updateCallDeatils,webSiteLead} = require('../controllers/leadcontroller')
-createLead// const excelToJson = require("convert-excel-to-json");
+const { createLead ,getAllLeads ,getSingleLead,updateLead ,assingedLead, followUpCreate,updateCallDeatils,webSiteLead} = require('../controllers/leadControllers')
+// const excelToJson = require("convert-excel-to-json");
 
  
 // Create a new lead

@@ -1,5 +1,5 @@
 const cron = require("node-cron");
-const { webSiteLead } = require("./controllers/leadcontroller");
+const { webSiteLead } = require("./controllers/leadControllers");
 
 // Schedule the cron job to run every 30 seconds
 cron.schedule("*/10 * * * * *", async () => {
