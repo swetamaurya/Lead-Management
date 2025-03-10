@@ -260,71 +260,72 @@ exports.assingedLead = async (req, res) => {
 
 
 
-exports.webSiteLead = async (req = null, res = null) => {
-    try {
-         const [zingerResponse, napResponse] = await Promise.all([
-            axios.get("https://zingercarparts.com/api/get/users"),
-            axios.get("https://napautopart.com/get_forms.php")
-        ]);
+exports.webSiteLead = async (req = null, res = null) => { 
+  try {
+      const [zingerResponse, napResponse] = await Promise.all([
+          axios.get("https://zingercarparts.com/api/get/users"),
+          axios.get("https://napautopart.com/get_forms.php")
+      ]);
 
-         if (!zingerResponse.data?.result || !Array.isArray(zingerResponse.data.result)) {
-            throw new Error("Invalid API response structure from Zinger Car Parts");
-        }
-        if (!napResponse.data?.result || !Array.isArray(napResponse.data.result)) {
-            throw new Error("Invalid API response structure from Nap Auto Parts");
-        }
+      if (!zingerResponse.data?.result || !Array.isArray(zingerResponse.data.result)) {
+          throw new Error("Invalid API response structure from Zinger Car Parts");
+      }
+      if (!napResponse.data?.result || !Array.isArray(napResponse.data.result)) {
+          throw new Error("Invalid API response structure from Nap Auto Parts");
+      }
 
-         const apiLeads = [...zingerResponse.data.result, ...napResponse.data.result];
-        // console.log(`[${new Date().toISOString()}] - Total Leads from APIs: ${apiLeads.length}`);
+      const apiLeads = [...zingerResponse.data.result, ...napResponse.data.result];
 
-        // Process each lead to check for true new leads
-        const newLeads = [];
+      // Process each lead to check for new leads
+      const newLeads = [];
 
-        for (const lead of apiLeads) {
-            // Check if an exact duplicate exists (latest entry by the same user)
-            const existingLead = await Lead.findOne({
-                email: lead.email,
-                mobile_number: lead.mobile_number,
-                name: lead.name,
-                year: lead.year,
-                make: lead.make,
-                model: lead.model,
-                part: lead.part,
-                created_at: lead.created_at
-            }).sort({ _id: -1 }); // Get the most recent entry
+      for (const lead of apiLeads) {
+          // 🚨 Ignore leads where make is "Yugo"
+          if (lead.make && lead.make.toLowerCase() === "yugo") {
+            //  console.log(`Skipping lead with make: ${lead.make}`);
+              continue; // Skip this iteration
+          }
 
-            if (!existingLead) {
-                // No exact match found, this is a fresh lead
-                newLeads.push(lead);
-            } else {
-             }
-        }
+          // Check if an exact duplicate exists (latest entry by the same user)
+          const existingLead = await Lead.findOne({
+              email: lead.email,
+              mobile_number: lead.mobile_number,
+              name: lead.name,
+              year: lead.year,
+              make: lead.make,
+              model: lead.model,
+              part: lead.part,
+              created_at: lead.created_at
+          }).sort({ _id: -1 }); // Get the most recent entry
 
-        // console.log(`[${new Date().toISOString()}] - New Leads to Insert: ${newLeads.length}`);
+          if (!existingLead) {
+              // No exact match found, this is a fresh lead
+              newLeads.push(lead);
+          }
+      }
 
-        // Insert only new leads
-        if (newLeads.length > 0) {
-            await Lead.insertMany(newLeads);
+      // Insert only new leads
+      if (newLeads.length > 0) {
+          await Lead.insertMany(newLeads);
 
-            // Fetch and return the newly inserted leads sorted in descending order
-            const insertedLeads = await Lead.find().sort({ _id: -1 }).limit(newLeads.length);
+          // Fetch and return the newly inserted leads sorted in descending order
+          const insertedLeads = await Lead.find().sort({ _id: -1 }).limit(newLeads.length);
 
-            return res
-                ? res.status(200).json({ message: "Leads updated successfully", insertedLeads })
-                : { message: "Leads updated successfully", insertedLeads };
-        } else {
-            return res
-                ? res.status(200).json({ message: "No new Leads to update" })
-                : { message: "No new Leads to update" };
-        }
-    } catch (error) {
-        console.error(`[${new Date().toISOString()}] - Error updating Leads:`, error);
-        return res
-            ? res.status(500).json({ message: "Error updating Leads", error: error.message })
-            : { message: "Error updating Leads", error: error.message };
-    }
+          return res
+              ? res.status(200).json({ message: "Leads updated successfully", insertedLeads })
+              : { message: "Leads updated successfully", insertedLeads };
+      } else {
+          return res
+              ? res.status(200).json({ message: "No new Leads to update" })
+              : { message: "No new Leads to update" };
+      }
+  } catch (error) {
+      console.error(`[${new Date().toISOString()}] - Error updating Leads:`, error);
+      return res
+          ? res.status(500).json({ message: "Error updating Leads", error: error.message })
+          : { message: "Error updating Leads", error: error.message };
+  }
 };
-
 
 
   
