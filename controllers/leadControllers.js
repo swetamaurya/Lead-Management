@@ -59,7 +59,10 @@ exports.getAllLeads = async (req, res) => {
     // Query leads
     let leads = await Lead.find(query)
       .populate("assignedTo", "name email userId roles") // Populate assigned user's details
-     
+      .populate({
+        path: 'assignedBy',
+        select: 'name email roles' // Populate assignedBy field with user details
+    })
       .skip(skip)
       .limit(limit ? parseInt(limit) : 0)
       .sort({ _id: -1 })
@@ -103,9 +106,11 @@ exports.getSingleLead = async (req, res) => {
       const { id } = req.query;
   
       const lead = await Lead.findById(id)
-    .populate('assignedTo', 'name email')
-   
-   .lean()
+    .populate('assignedTo', 'name email roles')
+    .populate({
+      path: 'assignedBy',
+      select: 'name email roles' // Populate assignedBy field with user details
+  }) 
      
     
   
@@ -221,41 +226,46 @@ exports.updateCallDeatils = async (req, res) => {
   }      
 
 
-exports.assingedLead = async (req, res) => {
+  exports.assingedLead = async (req, res) => {
     try {
-        const { leadIds, userId, assignedBy } = req.body; // Get assignedBy from request
-  
-        // Validate input
+        const { leadIds, userId, assignedBy } = req.body;
+
         if (!leadIds || !userId || !assignedBy) {
             return res.status(400).json({ message: "Missing required fields: leadIds, userId, assignedBy" });
         }
-  
-        // Update each lead with the assigned userId and assignedBy
-        for (let leadId of leadIds) {
-            await Lead.findOneAndUpdate(
-                { _id: leadId },
-                { $set: { assignedTo: userId, assignedBy: assignedBy } }, // Assign lead and store who assigned it
-                { new: true }
-            );
-        }
-  
-        // **Update the User model to store assigned leads and assignedBy**
+
+        // Assign leads to the user and store `assignedBy`
+        await Lead.updateMany(
+            { _id: { $in: leadIds } },
+            { $set: { assignedTo: userId, assignedBy: assignedBy } }
+        );
+
+        // Add assigned leads to the user profile
         await User.findOneAndUpdate(
             { _id: userId },
             { 
-                $addToSet: { assigned: { $each: leadIds } }, // Add leads without duplicates
-                $set: { assignedBy: assignedBy } // Save the ID of the person who assigned the leads
+                $addToSet: { assigned: { $each: leadIds } } // Ensure assigned leads are stored
             },
             { new: true }
         );
-  
+
+        // **Also store in Admin's profile** (who assigned the lead)
+        await User.findOneAndUpdate(
+            { _id: assignedBy }, // Find the Admin
+            { 
+                $addToSet: { assigned: { $each: leadIds } } // Store leads in Admin profile too
+            },
+            { new: true }
+        );
+
         return res.status(200).json({ message: "Leads assigned successfully." });
-  
+
     } catch (error) {
         console.error("Error assigning leads:", error);
         return res.status(500).json({ message: `Internal server error: ${error.message}` });
     }
-  };
+};
+
   
 
 
@@ -282,7 +292,7 @@ exports.webSiteLead = async (req = null, res = null) => {
       for (const lead of apiLeads) {
           // 🚨 Ignore leads where make is "Yugo"
           if (lead.make && lead.make.toLowerCase() === "yugo") {
-            //  console.log(`Skipping lead with make: ${lead.make}`);
+              // console.log(`Skipping lead with make: ${lead.make}`);
               continue; // Skip this iteration
           }
 
@@ -326,6 +336,8 @@ exports.webSiteLead = async (req = null, res = null) => {
           : { message: "Error updating Leads", error: error.message };
   }
 };
+
+
 
 
   
