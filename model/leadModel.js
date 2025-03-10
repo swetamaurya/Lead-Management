@@ -32,6 +32,7 @@ const leadSchema = new mongoose.Schema({
   email: { type: String  },
   callStatus: { type: String },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  assignedBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdBy: { type: String },
   date: {
     type: String,
