@@ -9,7 +9,8 @@ const sequenceSchema = new mongoose.Schema({
 
 const Sequence = mongoose.model('Sequence', sequenceSchema);
 
-// Function to generate sequential IDs for users based on roles or assets
+// Function to generate sequential IDs for users based on 
+// roles or assets
 async function getNextSequenceValue(type) {
   const prefixMap = {
     Admin: 'ADM',
