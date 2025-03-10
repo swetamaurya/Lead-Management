@@ -258,10 +258,11 @@ const getAllUser = async (req, res) => {
 
     const users = await User.find(query) 
     .populate({
-      path: "assigned"
+      path: "assigned",
+      model:'Lead'
   }).populate({
     path: "assignedBy"
-})
+}) 
   
       .sort({ _id: -1 })
       .skip(skip)
@@ -294,13 +295,14 @@ const getUser = async (req, res) => {
   try {
       const { _id } = req.query;
 
-      const user = await User.findOne({ _id })
+      const user = await User.findById( _id )
           .populate({
-              path: "assigned"
+              path: "assigned",
+              model:'Lead'
           }).populate({
             path: "assignedBy"
-        })
-          .lean();
+        }) 
+          
 
       if (!user) {
           return res.status(404).json({ message: "User not found." });
