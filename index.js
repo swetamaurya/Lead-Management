@@ -8,16 +8,18 @@ const leadRouter = require("./route/leadRoute");
 const deleteRouter = require("./route/deleteRoute");
 const exportRouter = require("./route/exportRoute");
 const searchRouter = require("./route/searchRoute");
+ 
   require("./cronJob");
 dotenv.config()
+
+
 PORT = process.env.PORT || 2000
 
  
 app.use(express.json());
 app.use(cors())
 
-
- 
+  
 app.use("/user" , UserRoute)
  app.use("/delete",deleteRouter)
  app.use('/lead',leadRouter)
