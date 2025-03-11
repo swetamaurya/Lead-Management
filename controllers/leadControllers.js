@@ -290,11 +290,11 @@ exports.webSiteLead = async (req = null, res = null) => {
       const newLeads = [];
 
       for (const lead of apiLeads) {
-          // 🚨 Ignore leads where make is "Yugo"
-          if (lead.make && lead.make.toLowerCase() === "yugo") {
-              // console.log(`Skipping lead with make: ${lead.make}`);
-              continue; // Skip this iteration
-          }
+        if (lead.make && lead.make.trim().toLowerCase() === "yugo") {
+          // console.log(`Skipping lead with make: "${lead.make}"`); // Debug log
+          continue; // Skip this iteration
+      }
+ 
 
           // Check if an exact duplicate exists (latest entry by the same user)
           const existingLead = await Lead.findOne({
