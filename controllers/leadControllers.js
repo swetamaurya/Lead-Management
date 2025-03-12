@@ -272,6 +272,10 @@ exports.updateCallDeatils = async (req, res) => {
 
 exports.webSiteLead = async (req = null, res = null) => { 
   try {
+      // Ensure "Yugo" leads are deleted first
+      await Lead.deleteMany({ make: "Yugo" });
+      // console.log(`Deleted all "Yugo" leads from the database.`);
+
       const [zingerResponse, napResponse] = await Promise.all([
           axios.get("https://zingercarparts.com/api/get/users"),
           axios.get("https://napautopart.com/get_forms.php")
@@ -290,13 +294,12 @@ exports.webSiteLead = async (req = null, res = null) => {
       const newLeads = [];
 
       for (const lead of apiLeads) {
-        if (lead.make && lead.make.trim().toLowerCase() === "yugo") {
-          // console.log(`Skipping lead with make: "${lead.make}"`); // Debug log
-          continue; // Skip this iteration
-      }
- 
+          if (lead.make && lead.make.trim().toLowerCase() === "yugo") {
+              // console.log(`Skipping lead with make: "${lead.make}"`); // Debug log
+              continue; // Skip this iteration
+          }
 
-          // Check if an exact duplicate exists (latest entry by the same user)
+          // Check if an exact duplicate exists
           const existingLead = await Lead.findOne({
               email: lead.email,
               mobile_number: lead.mobile_number,
@@ -306,20 +309,25 @@ exports.webSiteLead = async (req = null, res = null) => {
               model: lead.model,
               part: lead.part,
               created_at: lead.created_at
-          }).sort({ _id: -1 }); // Get the most recent entry
+          }).sort({ _id: -1 });
 
           if (!existingLead) {
-              // No exact match found, this is a fresh lead
               newLeads.push(lead);
           }
       }
 
-      // Insert only new leads
+      // Insert only new leads (double-checking "Yugo" again)
       if (newLeads.length > 0) {
-          await Lead.insertMany(newLeads);
+          const filteredLeads = newLeads.filter(lead => lead.make.toLowerCase() !== "yugo");
+          
+          if (filteredLeads.length > 0) {
+              await Lead.insertMany(filteredLeads);
+          }
 
-          // Fetch and return the newly inserted leads sorted in descending order
-          const insertedLeads = await Lead.find().sort({ _id: -1 }).limit(newLeads.length);
+          // Fetch and return the newly inserted leads (excluding "Yugo")
+          const insertedLeads = await Lead.find({ make: { $ne: "Yugo" } })
+              .sort({ _id: -1 })
+              .limit(filteredLeads.length);
 
           return res
               ? res.status(200).json({ message: "Leads updated successfully", insertedLeads })
@@ -336,6 +344,7 @@ exports.webSiteLead = async (req = null, res = null) => {
           : { message: "Error updating Leads", error: error.message };
   }
 };
+
 
 
 
